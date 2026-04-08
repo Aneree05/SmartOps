@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-smartops-bg text-gray-100 antialiased font-inter overflow-x-hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-space;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/[0.04] backdrop-blur-[16px] border border-smartops-primary/10 rounded-[20px];
+  }
+  
+  .glow-active {
+    box-shadow: 0 0 20px rgba(0,229,204,0.15);
+  }
+
+  .glow-amber {
+    box-shadow: 0 0 20px rgba(245,158,11,0.15);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 20px rgba(239,68,68,0.15);
+  }
+  
+  /* Scrollbar styling for dark mode */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 204, 0.2);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 204, 0.4);
+  }
+}
