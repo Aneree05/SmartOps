@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, KanbanSquare, LineChart, Users, Menu, X, Activity } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, LineChart, Users, Menu, X, Activity, LogOut } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -11,6 +12,8 @@ const navItems = [
 ];
 
 export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
+  const { logout } = useAuth();
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -63,8 +66,16 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         </nav>
         
         {/* Bottom User Area or Version */}
-        <div className="p-6 border-t border-smartops-primary/10">
-          <div className="flex items-center gap-3">
+        <div className="p-6 border-t border-smartops-primary/10 flex flex-col gap-4">
+          <button 
+            onClick={logout}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden text-amber-500 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/30 hover:shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+          >
+            <LogOut className="w-5 h-5 relative z-10" />
+            <span className="font-medium relative z-10">Logout</span>
+          </button>
+
+          <div className="flex items-center gap-3 mt-2">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-smartops-primary/20 to-smartops-primary rounded-xl flex items-center justify-center font-space font-bold text-sm text-smartops-bg shadow-[0_0_15px_rgba(0,229,204,0.3)]">
               OP
             </div>

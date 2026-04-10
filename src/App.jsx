@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 
 // Pages
 import Landing from './pages/Landing';
@@ -44,17 +46,19 @@ const AppLayout = ({ children }) => {
 
 const App = () => {
   return (
-    <Router>
-      <AppLayout>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/kanban" element={<KanbanBoard />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/team" element={<TeamOverview />} />
-        </Routes>
-      </AppLayout>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/team" element={<ProtectedRoute><TeamOverview /></ProtectedRoute>} />
+          </Routes>
+        </AppLayout>
+      </Router>
+    </AuthProvider>
   );
 };
 

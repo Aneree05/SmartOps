@@ -73,10 +73,8 @@ export const workflowVelocity = [
 ];
 
 export const teamMembers = [
-  { id: 1, name: 'Sarah Jenkins', role: 'Full Stack Engineer', initials: 'SJ', currentTask: 'WebSocket Realtime Sync', workload: 85, isOverloaded: false },
-  { id: 2, name: 'Mike Ross', role: 'Backend Lead', initials: 'MR', currentTask: 'API Rate Limiting', workload: 92, isOverloaded: true },
-  { id: 3, name: 'Rachel Zane', role: 'QA Automation', initials: 'RZ', currentTask: 'E2E Testing', workload: 110, isOverloaded: true }, // Highlighted as overloaded
-  { id: 4, name: 'Harvey Specter', role: 'Frontend Engineer', initials: 'HS', currentTask: 'Data Table Virtualization', workload: 65, isOverloaded: false },
-  { id: 5, name: 'Donna Paulsen', role: 'Product Manager', initials: 'DP', currentTask: 'Sprint Planning', workload: 78, isOverloaded: false },
-  { id: 6, name: 'Louis Litt', role: 'DevOps Engineer', initials: 'LL', currentTask: 'CI/CD Pipeline Fix', workload: 45, isOverloaded: false },
+  { id: 1, name: 'Aneree Patel', role: 'Full Stack Engineer & Project Lead', initials: 'AP', currentTask: 'Backend Auth System', workload: 85, isOverloaded: false },
+  { id: 2, name: 'Shriya Choksi', role: 'Frontend Engineer', initials: 'SC', currentTask: 'Dashboard & Kanban UI', workload: 92, isOverloaded: true },
+  { id: 3, name: 'Yug Thakkar', role: 'Backend Developer', initials: 'YT', currentTask: 'API Gateway Integration', workload: 110, isOverloaded: true },
+  { id: 4, name: 'Mihir Aadki', role: 'Analytics & Systems', initials: 'MA', currentTask: 'Bottleneck Detection Engine', workload: 65, isOverloaded: false },
 ];
