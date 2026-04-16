@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:5000/api';
 
 async function fetchAPI(endpoint, options = {}) {
   const token = localStorage.getItem('token');
@@ -13,7 +13,14 @@ async function fetchAPI(endpoint, options = {}) {
     headers,
   });
 
-  const data = await response.json();
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (err) {
+    console.error('Failed to parse JSON response. Raw text:', text);
+    throw new Error('Server returned an invalid JSON response');
+  }
 
   if (!response.ok) {
     throw new Error(data.message || 'Something went wrong');
@@ -75,5 +82,47 @@ export const updateTaskStage = async (taskId, stage) => {
   return fetchAPI(`/tasks/${taskId}/stage`, {
     method: 'PATCH',
     body: JSON.stringify({ stage }),
+  });
+};
+
+// Teams & Messages APIs
+
+export const joinTeam = async (teamId) => {
+  return fetchAPI('/teams/join', {
+    method: 'POST',
+    body: JSON.stringify({ teamId }),
+  });
+};
+
+export const createTeamInstance = async (name) => {
+  return fetchAPI('/teams/create', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+};
+
+export const getDMs = async (userId) => {
+  return fetchAPI(`/messages/dm/${userId}`, {
+    method: 'GET',
+  });
+};
+
+export const sendDM = async (receiverId, projectId, content) => {
+  return fetchAPI('/messages/dm', {
+    method: 'POST',
+    body: JSON.stringify({ receiverId, projectId, content }),
+  });
+};
+
+export const getBroadcasts = async (projectId) => {
+  return fetchAPI(`/messages/broadcast/${projectId}`, {
+    method: 'GET',
+  });
+};
+
+export const sendBroadcast = async (projectId, content) => {
+  return fetchAPI('/messages/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({ projectId, content }),
   });
 };

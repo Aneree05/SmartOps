@@ -1,18 +1,26 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, KanbanSquare, LineChart, Users, Menu, X, Activity, LogOut } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, LineChart, Users, Menu, X, Activity, LogOut, MessageSquare } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/kanban', label: 'Kanban Board', icon: KanbanSquare },
+  { path: '/messages', label: 'Messages', icon: MessageSquare },
   { path: '/analytics', label: 'Analytics', icon: LineChart },
   { path: '/team', label: 'Team', icon: Users },
 ];
 
+const getInitials = (name) => {
+  if (!name) return 'U';
+  const parts = name.split(' ');
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <>
@@ -77,10 +85,10 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
 
           <div className="flex items-center gap-3 mt-2">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-smartops-primary/20 to-smartops-primary rounded-xl flex items-center justify-center font-space font-bold text-sm text-smartops-bg shadow-[0_0_15px_rgba(0,229,204,0.3)]">
-              OP
+              {getInitials(user?.name)}
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Ops Admin</p>
+              <p className="text-sm font-medium text-white">{user?.name || "User"}</p>
               <p className="text-xs text-gray-500">v1.0.4 - Canary</p>
             </div>
           </div>

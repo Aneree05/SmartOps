@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import KanbanBoard from './pages/KanbanBoard';
 import Analytics from './pages/Analytics';
 import TeamOverview from './pages/TeamOverview';
+import Messages from './pages/Messages';
 
 const AppLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/team" element={<ProtectedRoute><TeamOverview /></ProtectedRoute>} />
           </Routes>

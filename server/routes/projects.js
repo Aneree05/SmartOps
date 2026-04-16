@@ -1,6 +1,6 @@
 // routes/projects.js
 const express    = require('express');
-const Project    = require('../models/Project');
+const Project    = require('../models/project');
 const { protect, allowRoles } = require('../middleware/authMiddleware');
 const router     = express.Router();
 
@@ -13,7 +13,8 @@ router.post('/', protect, allowRoles('admin', 'manager'), async (req, res) => {
 
 // Get all projects for logged-in user
 router.get('/', protect, async (req, res) => {
-  const projects = await Project.find({ 'members.user': req.user.id });
+  const projects = await Project.find({ 'members.user': req.user.id })
+    .populate('members.user', 'name email');
   res.json(projects);
 });
 

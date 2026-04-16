@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Activity, ArrowRight, Lock, Loader2 } from 'lucide-react';
+import { Activity, ArrowRight, Lock, Loader2, Copy, CheckCircle } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useAuth } from '../context/AuthContext';
+import { createTeamInstance, joinTeam } from '../services/api';
 
 const pageVariants = {
   initial: { opacity: 0, y: 30 },
@@ -22,6 +23,14 @@ export default function Landing() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('admin@smartops.io');
   const [password, setPassword] = useState('password123'); // Just some dummy default
+  const [role, setRole] = useState('member');
+  
+  // Modals & Action State
+  const [showLeaderModal, setShowLeaderModal] = useState(false);
+  const [generatedTeamId, setGeneratedTeamId] = useState('');
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [joinTeamIdInput, setJoinTeamIdInput] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,17 +38,49 @@ export default function Landing() {
     setLoading(true);
 
     try {
+      let result;
       if (isLogin) {
-        await login(email, password);
+        result = await login(email, password);
       } else {
-        await register(name || 'New User', email, password, 'member');
+        result = await register(name || 'New User', email, password, role);
       }
-      navigate('/dashboard');
+      
+      if (!isLogin && role === 'team_leader') {
+         // Create the initial project
+         const teamRes = await createTeamInstance(name ? `${name}'s Team` : 'New Project');
+         setGeneratedTeamId(teamRes.teamId);
+         setShowLeaderModal(true);
+      } else if (result.role === 'member' && !result.teamId) {
+         // Member logging in or registering without a team
+         setShowMemberModal(true);
+      } else {
+         navigate('/dashboard');
+      }
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleJoinSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await joinTeam(joinTeamIdInput);
+      setShowMemberModal(false);
+      navigate('/dashboard');
+    } catch (err) {
+      setErrorMsg('Invalid Team ID or already joined.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedTeamId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -100,7 +141,7 @@ export default function Landing() {
                       className="space-y-2 overflow-hidden"
                     >
                       <label className="text-sm font-medium text-gray-300 ml-1">Full Name</label>
-                      <div className="relative">
+                      <div className="relative mb-4">
                         <input 
                           type="text" 
                           value={name}
@@ -108,6 +149,18 @@ export default function Landing() {
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-smartops-primary/50 focus:ring-1 focus:ring-smartops-primary/50 transition-all font-inter"
                           placeholder="John Doe"
                         />
+                      </div>
+                      
+                      <label className="text-sm font-medium text-gray-300 ml-1">Account Type</label>
+                      <div className="relative">
+                        <select 
+                          value={role}
+                          onChange={(e) => setRole(e.target.value)}
+                          className="w-full bg-[#0a1122] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-smartops-primary/50 focus:ring-1 focus:ring-smartops-primary/50 transition-all font-inter appearance-none"
+                        >
+                          <option value="member">Team Member</option>
+                          <option value="team_leader">Team Leader</option>
+                        </select>
                       </div>
                     </motion.div>
                   )}
@@ -173,6 +226,48 @@ export default function Landing() {
         </motion.div>
 
       </div>
+
+      {showLeaderModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl text-center">
+            <h2 className="text-2xl font-space font-bold text-white mb-2">Team Created!</h2>
+            <p className="text-sm text-gray-400 mb-6 font-inter">Share this Team ID with your members so they can join.</p>
+            <div className="flex items-center justify-between border border-smartops-primary/30 bg-smartops-primary/10 rounded-xl p-4 mb-6">
+               <span className="font-space font-bold tracking-widest text-2xl text-white">{generatedTeamId}</span>
+               <button onClick={copyToClipboard} className="text-smartops-primary hover:text-white transition-colors">
+                  {copied ? <CheckCircle className="w-6 h-6" /> : <Copy className="w-6 h-6" />}
+               </button>
+            </div>
+            <button onClick={() => navigate('/dashboard')} className="w-full bg-smartops-primary text-black font-space font-bold py-3 rounded-xl hover:bg-[#00c2ad] transition-colors">
+              Go to Dashboard
+            </button>
+          </motion.div>
+        </div>
+      )}
+
+      {showMemberModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl text-center">
+            <h2 className="text-2xl font-space font-bold text-white mb-2">Join a Team</h2>
+            <p className="text-sm text-gray-400 mb-6 font-inter">Enter the Team ID to join a team.</p>
+            <form onSubmit={handleJoinSubmit}>
+               <input
+                 type="text"
+                 required
+                 value={joinTeamIdInput}
+                 onChange={e => setJoinTeamIdInput(e.target.value)}
+                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-center font-space tracking-widest focus:outline-none focus:border-smartops-primary/50 mb-6 uppercase"
+                 placeholder="6-CHAR ID"
+                 maxLength={6}
+               />
+               <button disabled={loading} type="submit" className="w-full bg-smartops-primary text-black font-space font-bold py-3 rounded-xl hover:bg-[#00c2ad] transition-colors">
+                 {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Join Team'}
+               </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
     </motion.div>
   );
 }

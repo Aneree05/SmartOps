@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 
 const projectSchema = new mongoose.Schema({
   name:    { type: String, required: true },
+  teamId:  { type: String, unique: true, sparse: true },
   owner:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   members: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

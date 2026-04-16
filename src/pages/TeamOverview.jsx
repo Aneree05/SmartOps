@@ -4,6 +4,8 @@ import { GlassCard } from '../components/GlassCard';
 import { teamMembers } from '../data/mockData';
 import { Mail, MoreVertical, X, Loader } from 'lucide-react';
 import { getProjects, addMember } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -17,7 +19,11 @@ const itemVariants = {
 };
 
 export default function TeamOverview() {
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  
   const [projectId, setProjectId] = useState(null);
+  const [actualTeamMembers, setActualTeamMembers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userId, setUserId] = useState('');
   const [role, setRole] = useState('member');
@@ -28,10 +34,28 @@ export default function TeamOverview() {
   useEffect(() => {
     getProjects()
       .then(projects => {
-        if (projects.length > 0) setProjectId(projects[0]._id);
+        if (projects.length > 0) {
+           setProjectId(projects[0]._id);
+           
+           const memberMap = new Map();
+           projects.forEach(p => {
+             if (p.members) {
+               p.members.forEach(m => {
+                 if (m.user && m.user._id !== currentUser?._id) {
+                     memberMap.set(m.user._id, {
+                        ...m.user,
+                        projectRole: m.role,
+                        projectId: p._id
+                     });
+                 }
+               });
+             }
+           });
+           setActualTeamMembers(Array.from(memberMap.values()));
+        }
       })
       .catch(console.error);
-  }, []);
+  }, [currentUser?._id]);
 
   const handleAddMember = async (e) => {
     e.preventDefault();
@@ -78,68 +102,37 @@ export default function TeamOverview() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {teamMembers.map((member) => (
-          <motion.div key={member.id} variants={itemVariants}>
+        {actualTeamMembers.length === 0 ? (
+           <p className="text-gray-500 font-inter py-8 col-span-full text-center">No other team members found.</p>
+        ) : actualTeamMembers.map((member) => (
+          <motion.div key={member._id} variants={itemVariants}>
             <GlassCard className="p-6 relative group overflow-hidden">
-              
-              {/* Overload Alert Glow Border Top */}
-              {member.isOverloaded && (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
-              )}
-
-              <div className="flex justify-between items-start mb-4">
-                {/* SVG Circular Meter */}
-                <div className="relative w-16 h-16 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90 absolute inset-0">
-                    {/* Background track */}
-                    <circle 
-                      cx="32" cy="32" r="28" 
-                      fill="none" 
-                      stroke="rgba(255,255,255,0.05)" 
-                      strokeWidth="4" 
-                    />
-                    {/* Animated Progress indicator */}
-                    <motion.circle 
-                      cx="32" cy="32" r="28" 
-                      fill="none" 
-                      stroke={member.isOverloaded ? '#f59e0b' : '#00e5cc'} 
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 28}
-                      initial={{ strokeDashoffset: 2 * Math.PI * 28 }}
-                      animate={{ strokeDashoffset: (2 * Math.PI * 28) * (1 - Math.min(member.workload, 100) / 100) }}
-                      transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
-                      className={member.isOverloaded ? "drop-shadow-[0_0_5px_rgba(245,158,11,0.5)] bg-red" : "drop-shadow-[0_0_5px_rgba(0,229,204,0.5)]"}
-                    />
-                  </svg>
-                  <span className="font-space font-bold text-lg text-white relative z-10">{member.initials}</span>
+               <div className="flex justify-between items-start mb-4">
+                <div className="relative w-16 h-16 flex items-center justify-center rounded-full bg-smartops-primary/20 text-smartops-primary border border-smartops-primary/30">
+                  <span className="font-space font-bold text-2xl text-white relative z-10">{member.name.charAt(0).toUpperCase()}</span>
                 </div>
+               </div>
+               
+               <div>
+                  <h3 className="font-space font-semibold text-lg text-white mb-1 group-hover:text-smartops-primary transition-colors">
+                    {member.name}
+                  </h3>
+                  <p className="text-xs text-gray-400 font-medium mb-4 capitalize">{member.projectRole || 'member'}</p>
+                  
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                     <p className="text-[10px] uppercase text-gray-500 font-bold tracking-wider mb-1">Email</p>
+                     <p className="text-sm text-gray-200 truncate">{member.email}</p>
+                  </div>
+               </div>
 
-                <button className="text-gray-500 hover:text-white transition-colors">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div>
-                <h3 className="font-space font-semibold text-lg text-white mb-1 group-hover:text-smartops-primary transition-colors">
-                  {member.name}
-                </h3>
-                <p className="text-xs text-gray-400 font-medium mb-4">{member.role}</p>
-                
-                <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-                   <p className="text-[10px] uppercase text-gray-500 font-bold tracking-wider mb-1">Current Focus</p>
-                   <p className="text-sm text-gray-200 truncate">{member.currentTask}</p>
-                </div>
-              </div>
-
-              <div className="mt-6 flex gap-2">
-                <button 
-                  onClick={() => window.open(`mailto:dummy@gmail.com?subject=SmartOps - Message to ${encodeURIComponent(member.name)}`)}
-                  className="flex-1 bg-white/5 hover:bg-white/10 py-2 rounded-lg text-sm font-medium transition-colors border border-white/5 flex justify-center items-center gap-2"
-                >
-                  <Mail className="w-4 h-4" /> Message
-                </button>
-              </div>
+               <div className="mt-6 flex gap-2">
+                  <button 
+                    onClick={() => navigate('/messages', { state: { memberId: member._id, memberName: member.name } })}
+                    className="flex-1 bg-white/5 hover:bg-white/10 py-2 rounded-lg text-sm font-medium transition-colors border border-white/5 flex justify-center items-center gap-2 group-hover:border-smartops-primary/50 group-hover:text-smartops-primary"
+                  >
+                    <Mail className="w-4 h-4" /> Message
+                  </button>
+               </div>
             </GlassCard>
           </motion.div>
         ))}
