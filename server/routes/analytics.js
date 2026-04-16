@@ -1,55 +1,110 @@
 const express = require("express");
 const router = express.Router();
-
-// Models (already in your project)
 const Task = require("../models/Task");
 const TaskHistory = require("../models/TaskHistory");
-
-// Your analytics logic
+const { protect } = require("../middleware/authMiddleware");
 const {
   calcAvgTimePerStage,
   detectBottlenecks,
-  calcWorkload,
+  calcWorkloadPerUser,
   detectStuckTasks,
-  generateInsights,
+  generateInsights
 } = require("../analytics/analyticsEngine");
+const { getDefaultProject } = require('../utils/projectHelper');
 
-// GET /api/analytics/summary
-router.get("/summary", async (req, res) => {
-  try {
-    console.log("🔥 Analytics API called");
+const mongoose = require("mongoose");
 
-    // Get data from DB
-    const tasks = await Task.find();
-    const history = await TaskHistory.find();
-
-    console.log("Tasks:", tasks.length);
-    console.log("History:", history.length);
-
-    // Run analytics
-    const avgTimes = calcAvgTimePerStage(history);
-    const bottlenecks = detectBottlenecks(avgTimes);
-    const workload = calcWorkload(tasks);
-    const stuckTasks = detectStuckTasks(tasks);
-    const insights = generateInsights(
-      avgTimes,
-      bottlenecks,
-      workload,
-      stuckTasks,
-    );
-
-    // Send response
-    res.json({
-      avgTimes,
-      bottlenecks,
-      workload,
-      stuckTasks,
-      insights,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Analytics failed" });
+// Helper function to map DB to expected schemas, filter by default project, or mock
+async function getData(req) {
+  if (req.query.mock === "true") {
+    return { mockFlag: true };
   }
+
+  const defaultProject = await getDefaultProject();
+  const matchFilter = { project_id: defaultProject._id };
+
+  const dbTasks = await Task.find(matchFilter).lean();
+  
+  // Use filter in TaskHistory.aggregate() by looking up the task
+  const historyAggregatePipeline = [
+    {
+      $lookup: {
+        from: "tasks", // MongoDB collection name for Task
+        localField: "task_id",
+        foreignField: "_id",
+        as: "taskInfo"
+      }
+    },
+    { $unwind: "$taskInfo" }
+  ];
+
+  historyAggregatePipeline.push({ $match: { "taskInfo.project_id": matchFilter.project_id } });
+
+  const dbHistory = await TaskHistory.aggregate(historyAggregatePipeline);
+
+  return { tasks: dbTasks, history: dbHistory, mockFlag: false };
+}
+
+// Error handling middleware helper for routes
+const handleAnalytics = async (req, res, processor) => {
+  try {
+    const data = await getData(req);
+    if (data.mockFlag) return processor(res, data, true);
+    processor(res, data, false);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+};
+
+router.get("/stages/:projectId", protect, (req, res) => {
+  handleAnalytics(req, res, (res, data, isMock) => {
+    if (isMock) return res.json({ "To Do": 2, "In Development": 24, "In Testing": 48, "Done": 1 });
+    res.json(calcAvgTimePerStage(data.history));
+  });
+});
+
+router.get("/bottlenecks/:projectId", protect, (req, res) => {
+  handleAnalytics(req, res, (res, data, isMock) => {
+    if (isMock) return res.json([{ stageId: "In Testing", avgHours: 48, delayPercent: "42.1" }]);
+    res.json(detectBottlenecks(calcAvgTimePerStage(data.history), 24));
+  });
+});
+
+router.get("/workload/:projectId", protect, (req, res) => {
+  handleAnalytics(req, res, (res, data, isMock) => {
+    if (isMock) return res.json({ "Sarah": { count: 6, overloaded: true } });
+    res.json(calcWorkloadPerUser(data.tasks));
+  });
+});
+
+router.get("/stuck/:projectId", protect, (req, res) => {
+  handleAnalytics(req, res, (res, data, isMock) => {
+    if (isMock) return res.json([{ task_id: "x", title: "Fix bug", stage_id: "In Testing", hoursStuck: 72 }]);
+    const avgTimes = calcAvgTimePerStage(data.history);
+    res.json(detectStuckTasks(data.tasks, avgTimes, 48));
+  });
+});
+
+router.get("/summary/:projectId", protect, (req, res) => {
+  handleAnalytics(req, res, (res, data, isMock) => {
+    if (isMock) {
+      return res.json({
+        avgTimes: { "To Do": 2, "In Development": 24, "In Testing": 48, "Done": 1 },
+        bottlenecks: [{ stageId: "In Testing", avgHours: 48, delayPercent: "42.1" }],
+        workload: { "Sarah": { count: 6, overloaded: true }, "John": { count: 3, overloaded: false } },
+        stuckTasks: [{ task_id: "x", title: "Fix bug", stage_id: "In Testing", hoursStuck: 72 }],
+        insights: ["In Testing stage causes 42% of total delay", "Sarah is overloaded with 6 active tasks"]
+      });
+    }
+
+    const avgTimes = calcAvgTimePerStage(data.history);
+    const bottlenecks = detectBottlenecks(avgTimes, 24);
+    const workload = calcWorkloadPerUser(data.tasks);
+    const stuckTasks = detectStuckTasks(data.tasks, avgTimes, 48); 
+    const insights = generateInsights(avgTimes, bottlenecks, workload, stuckTasks);
+
+    res.json({ avgTimes, bottlenecks, workload, stuckTasks, insights });
+  });
 });
 
 module.exports = router;

@@ -9,7 +9,9 @@ const projectSchema = new mongoose.Schema({
     role: { type: String, enum: ['manager', 'member'] }
   }],
   stages:    { type: [String], default: ['To Do', 'Development', 'Testing', 'Review', 'Done'] },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  description: { type: String },
+  isDefault: { type: Boolean, default: false }
 });
 
-module.exports = mongoose.model('Project', projectSchema);
+module.exports = mongoose.models.Project || mongoose.model('Project', projectSchema);

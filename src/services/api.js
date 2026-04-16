@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 async function fetchAPI(endpoint, options = {}) {
   const token = localStorage.getItem('token');
@@ -16,7 +16,7 @@ async function fetchAPI(endpoint, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    throw new Error(data.error || data.message || 'Something went wrong');
   }
 
   return data;
@@ -37,9 +37,7 @@ export const register = async (name, email, password, role) => {
 };
 
 export const getProjects = async () => {
-  return fetchAPI('/projects', {
-    method: 'GET',
-  });
+  return fetchAPI('/projects', { method: 'GET' });
 };
 
 export const createProject = async (name, stages) => {
@@ -56,12 +54,10 @@ export const addMember = async (projectId, userId, role) => {
   });
 };
 
-// Task APIs (For Step 7 onwards)
-
-export const getTasksByProject = async (projectId) => {
-  return fetchAPI(`/tasks?projectId=${projectId}`, {
-    method: 'GET',
-  });
+// Task APIs
+export const getTasks = async (projectId) => {
+  const query = projectId ? `?projectId=${projectId}` : '';
+  return fetchAPI(`/tasks${query}`, { method: 'GET' });
 };
 
 export const createTask = async (data) => {
@@ -71,9 +67,23 @@ export const createTask = async (data) => {
   });
 };
 
-export const updateTaskStage = async (taskId, stage) => {
-  return fetchAPI(`/tasks/${taskId}/stage`, {
+export const moveTask = async (taskId, newStageId) => {
+  return fetchAPI(`/tasks/${taskId}/move`, {
     method: 'PATCH',
-    body: JSON.stringify({ stage }),
+    body: JSON.stringify({ stage_id: newStageId }),
   });
 };
+
+export const deleteTask = async (taskId) => {
+  return fetchAPI(`/tasks/${taskId}`, { method: 'DELETE' });
+};
+
+// Analytics APIs
+export const getAnalyticsSummary = async (projectId) => {
+  const pid = projectId || 'all';
+  return fetchAPI(`/analytics/summary/${pid}`, { method: 'GET' });
+};
+
+// Export aliases to avoid breaking any other old components temporarily
+export const getTasksByProject = getTasks;
+export const updateTaskStage = moveTask;
